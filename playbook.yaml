@@ -1,0 +1,46 @@
+---
+- name: Install docker in both Ubuntu and CentOS
+  hosts: docker_install
+  become: yes
+ 
+  tasks:
+    - name: Import the role for Ubuntu installation
+      tags: docker_ubuntu
+      import_role: name=docker_ubuntu
+      when: ansible_facts['os_family'] == 'Debian'
+
+
+    - name: Import role for the CentOS installation
+      tags: docker_centos
+      import_role: name=docker_centos
+      when: ansible_facts['os_family'] == 'RedHat'
+
+    - name: Add docker group to the current useri
+      tags: add_user
+      group:
+        name: docker
+        state: present
+    - name: Add user into the group docker
+      user: 
+        name: qzkmcruz
+        group: docker
+        append: yes
+
+    - name: Disable firewall for Ubuntu
+      service: 
+        name: ufw
+        state: stopped
+        enabled: no
+      when: ansible_facts['os_family'] == 'Debian'
+
+
+    - name: Disable firewall for CentOs
+      service:
+        name: firewalld
+        state: stopped
+        enabled: no
+      when: ansible_facts['os_family'] == 'RedHat'
+
+    - name: Install and configure WEB and DB using Docker image
+      import_role: name=docker
+      tags: docker

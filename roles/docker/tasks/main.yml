@@ -1,0 +1,53 @@
+---
+# tasks file for docker
+
+- name: Create the directory for docker
+  file:
+    path: docker
+    state: directory
+- name: Copy contents of docker/ from host into client 
+  copy:
+    src: docker/
+    dest: docker/
+
+- name: Build the image for WEB from dockerfile directory
+  docker_image:
+    name: web
+    build:
+      path: docker/web/
+      pull: no
+    state: present
+    source: build
+
+- name: Build the image for DB from dockerfile directory
+  docker_image:
+    name: db
+    build:
+      path: docker/db/
+      pull: no
+    state: present
+    source:  build
+
+- name: Clear the IP list for the new services
+  shell: iptables -F; iptables -X
+
+- name: Restart Docker Services 
+  service:
+    name: docker
+    state: restarted
+
+
+- name: Run the WEB using docker
+  docker_container:
+    name: webserver
+    image: web:latest
+    privileged: yes
+    published_ports: 81:81
+   
+
+- name: Run the DB using docker
+  docker_container:
+    name: dbserver
+    image: db:latest
+    privileged: yes
+    published_ports: 3308:3308
